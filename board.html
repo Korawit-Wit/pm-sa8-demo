@@ -1,0 +1,384 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>PM SA8 Board</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Sans+Thai:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: sticky status header, tab bar, then a single working column; furnace matrix scrolls sideways inside its own box. */
+:root{
+  --bg:#eef0ef; --surface:#fbfcfb; --ink:#1b2321; --muted:#5d6a66; --line:#d3d9d6;
+  --accent:#0f6b5c; --accent-ink:#ffffff;
+  --heat:#c2410c; --meth:#1d5fb4; --tus:#8a5a00; --sat:#4b5a66; --pm:#7a3fa0;
+  --warn:#b45309; --warn-bg:#fdf0dd; --bad:#b42318; --bad-bg:#fde8e6; --ok:#1f7a3d; --ok-bg:#e3f3e8;
+  --today:#dff1ec;
+  --f-display:'Chakra Petch','IBM Plex Sans Thai',system-ui,sans-serif;
+  --f-body:'IBM Plex Sans Thai',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --f-mono:'IBM Plex Mono',ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#121816; --surface:#1a2220; --ink:#e6ece9; --muted:#9aa8a3; --line:#2c3935;
+  --accent:#3fc1a6; --accent-ink:#062a22;
+  --heat:#ff8a5c; --meth:#79aef5; --tus:#e3b55a; --sat:#9db0be; --pm:#c89be6;
+  --warn:#f0b35a; --warn-bg:#352a14; --bad:#ff8a80; --bad-bg:#3a1c1a; --ok:#6fd08c; --ok-bg:#16301f;
+  --today:#17332d; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#121816; --surface:#1a2220; --ink:#e6ece9; --muted:#9aa8a3; --line:#2c3935;
+  --accent:#3fc1a6; --accent-ink:#062a22;
+  --heat:#ff8a5c; --meth:#79aef5; --tus:#e3b55a; --sat:#9db0be; --pm:#c89be6;
+  --warn:#f0b35a; --warn-bg:#352a14; --bad:#ff8a80; --bad-bg:#3a1c1a; --ok:#6fd08c; --ok-bg:#16301f;
+  --today:#17332d; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.5;padding-inline:16px;padding-block:0 40px}
+.wrap{max-width:860px;margin:0 auto}
+header{padding-block:20px 12px;display:flex;flex-wrap:wrap;gap:12px 24px;align-items:flex-end;justify-content:space-between}
+h1{font-family:var(--f-display);font-size:28px;line-height:1.1;margin:0;letter-spacing:.01em}
+.sub{color:var(--muted);font-size:13px;margin-top:4px}
+.clock{font-family:var(--f-mono);font-size:13px;color:var(--muted);text-align:right}
+.clock b{display:block;font-family:var(--f-display);font-size:20px;color:var(--ink);font-weight:600}
+.sum{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-block:8px 16px}
+.sum div{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:10px 12px}
+.sum b{display:block;font-family:var(--f-display);font-size:26px;line-height:1.1;font-variant-numeric:tabular-nums}
+.sum span{font-size:12px;color:var(--muted)}
+.sum .alert b{color:var(--bad)} .sum .now b{color:var(--accent)}
+nav{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:16px;overflow-x:auto}
+nav button{font:inherit;font-weight:500;background:none;border:0;border-bottom:3px solid transparent;color:var(--muted);padding:10px 14px;cursor:pointer;white-space:nowrap}
+nav button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent)}
+button:focus-visible,summary:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+h2{font-family:var(--f-display);font-size:15px;letter-spacing:.06em;text-transform:uppercase;margin:20px 0 8px;display:flex;align-items:center;gap:8px}
+h2 .n{font-family:var(--f-mono);font-size:12px;background:var(--line);color:var(--ink);border-radius:10px;padding:0 8px;letter-spacing:0}
+.list{display:flex;flex-direction:column;gap:6px}
+.task{display:grid;grid-template-columns:auto auto 1fr auto;gap:4px 12px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:10px 12px}
+.task.s-today{border-color:var(--accent);box-shadow:inset 3px 0 0 var(--accent)}
+.task.s-late,.task.s-overdue{border-color:var(--bad);box-shadow:inset 3px 0 0 var(--bad)}
+.task.done{opacity:.55}
+.task.done .tname{text-decoration:line-through}
+.chk{width:28px;height:28px;border:2px solid var(--muted);border-radius:6px;background:var(--surface);color:var(--accent-ink);cursor:pointer;display:grid;place-items:center;padding:0}
+.chk[aria-pressed="true"]{background:var(--accent);border-color:var(--accent)}
+.chk svg{width:16px;height:16px;opacity:0}.chk[aria-pressed="true"] svg{opacity:1}
+.fur{font-family:var(--f-mono);font-weight:500;font-size:13px;background:var(--ink);color:var(--bg);border-radius:4px;padding:1px 7px}
+.tname{display:flex;align-items:center;gap:8px;min-width:0;font-weight:500}
+.tname .g{flex:none;display:inline-flex}
+.date{font-family:var(--f-mono);font-size:12px;color:var(--muted);text-align:right;white-space:nowrap}
+.note{grid-column:3 / -1;font-size:13px;color:var(--muted)}
+.tag{font-size:11px;font-weight:600;border-radius:4px;padding:1px 6px;margin-left:6px}
+.tag.late{background:var(--bad-bg);color:var(--bad)} .tag.today{background:var(--ok-bg);color:var(--ok)} .tag.soon{background:var(--warn-bg);color:var(--warn)}
+.empty{color:var(--muted);padding:14px;border:1px dashed var(--line);border-radius:6px;font-size:14px}
+details{margin-top:20px} summary{cursor:pointer;font-family:var(--f-display);font-size:15px;letter-spacing:.06em;text-transform:uppercase;padding-block:6px}
+.btn{font:inherit;font-weight:500;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:6px;padding:8px 14px;cursor:pointer}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.dng{border-color:var(--bad);color:var(--bad)}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-block:10px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font:inherit;font-size:13px;font-family:var(--f-mono);border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:14px;padding:3px 12px;cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.mx{overflow-x:auto;border:1px solid var(--line);border-radius:6px;background:var(--surface)}
+table{border-collapse:collapse;font-family:var(--f-mono);font-size:11px;width:100%}
+th,td{border:1px solid var(--line);text-align:center;min-width:26px;height:30px;padding:0}
+th{font-weight:500;color:var(--muted);background:var(--bg)}
+th:first-child,td:first-child{position:sticky;left:0;background:var(--bg);z-index:1;min-width:44px;font-weight:600;color:var(--ink)}
+td.we,th.we{background:color-mix(in srgb,var(--line) 45%,var(--surface))}
+td.td,th.td{background:var(--today);color:var(--accent);font-weight:600}
+td svg{width:15px;height:15px;vertical-align:middle}
+td .dn{opacity:.3}
+.legend{display:flex;flex-wrap:wrap;gap:6px 18px;margin-top:12px;font-size:13px;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend svg,.g svg{width:16px;height:16px}
+pre.msg{white-space:pre-wrap;word-break:break-word;background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:14px;font-family:var(--f-body);font-size:14px;margin:8px 0}
+.info{font-size:13px;color:var(--muted);max-width:65ch}
+.info code{font-family:var(--f-mono);font-size:12px}
+.t-H{color:var(--heat)}.t-M{color:var(--meth)}.t-T{color:var(--tus)}.t-S{color:var(--sat)}.t-P{color:var(--pm)}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:8px 16px;border-radius:6px;font-size:14px}
+@media (max-width:520px){.task{grid-template-columns:auto 1fr auto}.fur{grid-column:2}.tname{grid-column:1 / -1}.date{grid-column:3;grid-row:1}.note{grid-column:1 / -1}.task .chk{grid-row:1}}
+@media (prefers-reduced-motion:no-preference){.chk,.btn,.chip{transition:background .12s,border-color .12s}}
+</style>
+
+<div class="wrap">
+<header>
+  <div>
+    <h1>PM SA8</h1>
+    <div class="sub">แผนบำรุงรักษาเตา F1–F9 · ตุลาคม 2026</div>
+  </div>
+  <div class="clock"><b id="clockDate"></b><span id="clockSub"></span></div>
+</header>
+
+<div class="sum" id="sum"></div>
+
+<nav role="tablist" id="tabs">
+  <button role="tab" aria-selected="true" data-tab="today">วันนี้</button>
+  <button role="tab" aria-selected="false" data-tab="matrix">ตารางเตา</button>
+  <button role="tab" aria-selected="false" data-tab="all">งานทั้งหมด</button>
+  <button role="tab" aria-selected="false" data-tab="line">LINE 08:00</button>
+</nav>
+
+<main id="view"></main>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script src="config.js"></script>
+<script>
+const YEAR=2026, MONTH=10, TOL=2;
+const API=(new URLSearchParams(location.search).get("api"))||(window.PM_CONFIG&&window.PM_CONFIG.API_URL)||"";
+const TASK={
+  H:{name:'ตรวจเช็คหัวเผา',short:'หัวเผา'},
+  M:{name:'ทำความสะอาดท่อเมทานอล',short:'ท่อเมทานอล'},
+  T:{name:'ตรวจเช็ค TUS',short:'TUS'},
+  S:{name:'ตรวจเช็ค SAT',short:'SAT'},
+  P:{name:'ทำความสะอาดเตา + PM (sooting)',short:'PM'}
+};
+// [furnace, code, start, end, note]
+const PLAN=[
+  [1,'T',2,2,''],[1,'H',10,10,''],[1,'M',12,12,''],[1,'S',16,16,''],[1,'H',25,25,''],[1,'P',29,30,'เปิดฝาหลังเตาชุบแข็ง'],
+  [2,'M',4,4,''],[2,'H',10,10,''],[2,'S',16,16,''],[2,'P',19,20,'เปิดฝาหลังเตาชุบแข็ง, ตัดสายพาน'],[2,'T',21,21,''],[2,'H',25,25,''],
+  [3,'T',4,4,''],[3,'H',10,10,''],[3,'M',14,14,''],[3,'S',16,16,''],[3,'H',25,25,''],[3,'P',30,31,''],
+  [5,'T',10,10,''],[5,'H',10,10,''],[5,'P',12,13,'ล้างแผ่น Heat Exchange (ทำพร้อมท่อเมทานอล รอบ 7/10)'],[5,'S',16,16,''],[5,'H',25,25,''],[5,'M',26,26,''],
+  [6,'H',10,10,''],[6,'T',12,12,''],[6,'P',15,16,'ตัดสายพาน (ทำพร้อมท่อเมทานอล รอบ 8/10)'],[6,'S',16,16,''],[6,'H',25,25,''],[6,'M',29,29,''],
+  [7,'P',3,4,''],[7,'T',5,5,''],[7,'H',10,10,''],[7,'S',16,16,''],[7,'M',18,18,''],[7,'H',25,25,''],
+  [8,'P',7,8,'เปิดฝาหลังเตาชุบแข็ง / ล้างแผ่น Heat Exchange (ย้ายจาก 15-16/10 เพราะ oil tank temp สูง)'],[8,'H',10,10,''],[8,'S',16,16,''],[8,'T',17,17,''],[8,'M',21,21,''],[8,'H',25,25,''],
+  [9,'P',1,2,'เปิดฝาหลังเตาชุบแข็ง'],[9,'M',1,1,''],[9,'T',3,3,''],[9,'H',10,10,''],[9,'S',16,16,''],[9,'M',16,16,''],[9,'H',25,25,''],[9,'M',31,31,'']
+];
+const TASKS=PLAN.map(p=>({id:'F'+p[0]+p[1]+p[2],f:p[0],c:p[1],s:p[2],e:p[3],note:p[4]}))
+  .sort((a,b)=>a.s-b.s||a.f-b.f||a.c.localeCompare(b.c));
+const FURNACES=[1,2,3,5,6,7,8,9];
+
+/* ---------- glyphs ---------- */
+function glyph(c,extra){
+  const a='viewBox="0 0 16 16" aria-hidden="true"';
+  const sw='stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"';
+  const m={
+    H:`<svg ${a}><circle cx="8" cy="8" r="6" fill="currentColor"/></svg>`,
+    M:`<svg ${a}><path d="M8 2 14.5 13.5h-13z" fill="currentColor"/></svg>`,
+    T:`<svg ${a}><path d="M8 1.8l1.9 4.2 4.5.4-3.4 3 1 4.4L8 11.5 4 13.8l1-4.4-3.4-3 4.5-.4z" fill="none" ${sw}/></svg>`,
+    S:`<svg ${a}><rect x="2.5" y="2.5" width="11" height="11" rx="1.5" fill="currentColor" opacity=".8"/></svg>`,
+    P:`<svg ${a}><path d="M8 1.5l5.8 3.2v6.6L8 14.5 2.2 11.3V4.7z" fill="currentColor"/></svg>`
+  };
+  return `<span class="g t-${c}">${m[c]}</span>`;
+}
+const CHECK='<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8.5l3.3 3.2L13 4.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
+/* ---------- date helpers ---------- */
+function todayNum(){
+  const n=new Date(); n.setHours(0,0,0,0);
+  return Math.round((n-new Date(YEAR,MONTH-1,1))/864e5)+1; // day-of-plan; may fall outside 1..31
+}
+function fmtDay(d){ return d+'/'+MONTH; }
+function range(t){ return t.s===t.e?fmtDay(t.s):fmtDay(t.s)+'–'+fmtDay(t.e); }
+function dow(d){ return new Date(YEAR,MONTH-1,d).getDay(); }
+
+/* ---------- done state: Google Sheet (via Apps Script Web App), cached in localStorage ---------- */
+let done=new Set(), mode=API?'connecting':'local', pending=0, chain=Promise.resolve();
+const LS='pm-sa8-done-v1', LSKEY='pm-sa8-key-v1';
+function lsLoad(){ try{ return new Set(JSON.parse(localStorage.getItem(LS)||'[]')); }catch(e){ return new Set(); } }
+function lsSave(){ try{ localStorage.setItem(LS,JSON.stringify([...done])); }catch(e){} }
+function getKey(){ try{ return localStorage.getItem(LSKEY)||''; }catch(e){ return ''; } }
+function setKey(k){ try{ if(k) localStorage.setItem(LSKEY,k); else localStorage.removeItem(LSKEY); }catch(e){} }
+done=lsLoad();
+
+function sameSet(a,b){ if(a.size!==b.size) return false; for(const x of a) if(!b.has(x)) return false; return true; }
+async function api(params){
+  const q=new URLSearchParams(params).toString();
+  const r=await fetch(API+(API.includes('?')?'&':'?')+q,{cache:'no-store'});
+  const j=await r.json();
+  if(j.error) throw new Error(j.error);
+  return j;
+}
+function applyServer(ids){
+  const s=new Set(ids);
+  mode='shared';
+  if(!sameSet(s,done)){ done=s; lsSave(); render(); } else updateMode();
+}
+async function pull(){
+  if(!API||pending) return;
+  try{ applyServer((await api({action:'get'})).done); }
+  catch(e){ mode='offline'; updateMode(); }
+}
+function setMany(ids,val){
+  ids.forEach(id=>{ if(val) done.add(id); else done.delete(id); });
+  lsSave(); render();
+  if(!API) return;
+  let key=getKey();
+  if(!key){
+    key=(prompt('ใส่ PIN ของทีมเพื่อบันทึกสถานะร่วมกัน (ถามผู้ดูแลชีต)')||'').trim();
+    if(!key){ toast('ยังไม่ได้บันทึกร่วมกัน ต้องใส่ PIN'); pull(); return; }
+  }
+  pending++;
+  chain=chain.then(async()=>{
+    try{
+      const j=await api({action:'set',id:ids.join(','),val:val?1:0,key});
+      setKey(key); pending--; applyServer(j.done);
+    }catch(e){
+      pending--;
+      if(String(e.message)==='key'){ setKey(''); toast('PIN ไม่ถูกต้อง ลองติ๊กใหม่อีกครั้ง'); }
+      else { mode='offline'; toast('บันทึกไม่สำเร็จ ตรวจสอบอินเทอร์เน็ตแล้วลองใหม่'); }
+      pull(); updateMode();
+    }
+  });
+}
+function setDone(id,val){ setMany([id],val); }
+function updateMode(){ const el=document.getElementById('modeNote'); if(el) el.textContent=modeText(); }
+function modeText(){
+  if(mode==='shared') return 'สถานะงานซิงค์กับ Google Sheet ทุกคนเห็นตรงกัน (อัปเดตอัตโนมัติทุก 30 วินาที)';
+  if(mode==='offline') return 'เชื่อมต่อชีตไม่ได้ในขณะนี้ แสดงสถานะล่าสุดที่เก็บไว้ในเครื่อง';
+  if(mode==='connecting') return 'กำลังเชื่อมต่อกับ Google Sheet…';
+  return 'ยังไม่ได้ตั้งค่า API_URL สถานะงานบันทึกในเครื่องนี้เท่านั้น';
+}
+
+/* ---------- status ---------- */
+function statusOf(t,n){
+  if(done.has(t.id)) return 'done';
+  if(n>=t.s && n<=t.e) return 'today';
+  if(n>t.e && n<=t.e+TOL) return 'late';
+  if(n>t.e+TOL) return 'overdue';
+  if(t.s-n<=3) return 'soon';
+  return 'later';
+}
+
+/* ---------- views ---------- */
+let tab='today', filterF=0, hideDone=false;
+const $=s=>document.querySelector(s);
+
+function taskRow(t,n){
+  const st=statusOf(t,n), isDone=st==='done';
+  let tag='';
+  if(st==='today') tag='<span class="tag today">วันนี้</span>';
+  if(st==='late') tag=`<span class="tag late">เลยกำหนด ${n-t.e} วัน</span>`;
+  if(st==='overdue') tag=`<span class="tag late">เลยช่วง ±${TOL} วัน</span>`;
+  if(st==='soon') tag=`<span class="tag soon">${t.s-n===1?'พรุ่งนี้':'อีก '+(t.s-n)+' วัน'}</span>`;
+  return `<div class="task s-${st}${isDone?' done':''}">
+    <button class="chk" data-id="${t.id}" aria-pressed="${isDone}" aria-label="เสร็จแล้ว: F${t.f} ${TASK[t.c].name}">${CHECK}</button>
+    <span class="fur">F${t.f}</span>
+    <span class="tname">${glyph(t.c)}<span>${TASK[t.c].name}${tag}</span></span>
+    <span class="date">${range(t)}</span>
+    ${t.note?`<span class="note">${t.note}</span>`:''}
+  </div>`;
+}
+function section(title,items,n,emptyText){
+  return `<h2>${title}<span class="n">${items.length}</span></h2>`+
+    (items.length?`<div class="list">${items.map(t=>taskRow(t,n)).join('')}</div>`:(emptyText?`<div class="empty">${emptyText}</div>`:''));
+}
+
+function viewToday(n){
+  const open=TASKS.filter(t=>!done.has(t.id));
+  const today=open.filter(t=>n>=t.s&&n<=t.e);
+  const late=open.filter(t=>n>t.e&&n<=t.e+TOL);
+  const soon=open.filter(t=>t.s>n&&t.s-n<=3);
+  const over=open.filter(t=>n>t.e+TOL);
+  let h=section('งานวันนี้',today,n,'วันนี้ไม่มีงานตามแผน');
+  if(late.length) h+=section('ค้าง ยังอยู่ในช่วง ±'+TOL+' วัน',late,n);
+  h+=section('ใน 3 วันข้างหน้า',soon,n,'ไม่มีงานใน 3 วันข้างหน้า');
+  if(over.length){
+    h+=`<details><summary>เลยช่วง ±${TOL} วัน ยังไม่ติ๊ก (${over.length})</summary>
+      <div class="row"><button class="btn" id="bulk">ติ๊กเสร็จทั้งหมดที่เลยช่วงแล้ว</button><span class="info" id="bulkMsg"></span></div>
+      <div class="list">${over.map(t=>taskRow(t,n)).join('')}</div></details>`;
+  }
+  h+=`<p class="info" id="modeNote">${modeText()}</p>`;
+  return h;
+}
+
+function viewMatrix(n){
+  const days=Array.from({length:31},(_,i)=>i+1);
+  const head=`<tr><th>เตา</th>${days.map(d=>`<th class="${[0,6].includes(dow(d))?'we':''} ${d===n?'td':''}">${d}</th>`).join('')}</tr>`;
+  const body=FURNACES.map(f=>{
+    const cells=days.map(d=>{
+      const ts=TASKS.filter(t=>t.f===f&&d>=t.s&&d<=t.e);
+      const inner=ts.map(t=>`<span class="${done.has(t.id)?'dn':''}" title="F${f} ${TASK[t.c].name}">${glyph(t.c)}</span>`).join('');
+      return `<td class="${[0,6].includes(dow(d))?'we':''} ${d===n?'td':''}">${inner}</td>`;
+    }).join('');
+    return `<tr><td>F${f}</td>${cells}</tr>`;
+  }).join('');
+  const legend=Object.keys(TASK).map(c=>`<span>${glyph(c)}${TASK[c].name}</span>`).join('');
+  return `<div class="mx"><table>${head}${body}</table></div>
+    <div class="legend">${legend}</div>
+    <p class="info">ทุกงานเลื่อนได้ ±${TOL} วันจากวันที่ในแผน ช่องสีจางคืองานที่ติ๊กเสร็จแล้ว คอลัมน์สีเขียวคือวันนี้ ส่วนเสาร์–อาทิตย์เป็นพื้นเทา</p>`;
+}
+
+function viewAll(n){
+  const chips=[0,...FURNACES].map(f=>`<button class="chip" data-f="${f}" aria-pressed="${filterF===f}">${f?'F'+f:'ทุกเตา'}</button>`).join('');
+  let list=TASKS.filter(t=>!filterF||t.f===filterF);
+  if(hideDone) list=list.filter(t=>!done.has(t.id));
+  const total=TASKS.filter(t=>!filterF||t.f===filterF).length, dn=TASKS.filter(t=>(!filterF||t.f===filterF)&&done.has(t.id)).length;
+  return `<div class="chips">${chips}</div>
+    <div class="row"><button class="btn" id="hd" aria-pressed="${hideDone}">${hideDone?'แสดงงานที่เสร็จแล้ว':'ซ่อนงานที่เสร็จแล้ว'}</button>
+    <span class="info">เสร็จ ${dn} จาก ${total} งาน</span></div>
+    <div class="list">${list.map(t=>taskRow(t,n)).join('')||'<div class="empty">ไม่มีงานที่ตรงกับตัวกรอง</div>'}</div>`;
+}
+
+/* same rules as the Apps Script that sends the LINE message */
+function lineMessage(n){
+  const open=TASKS.filter(t=>!done.has(t.id));
+  const L=t=>'• F'+t.f+' '+TASK[t.c].name+(t.note?'\n   ('+t.note+')':'');
+  const today=open.filter(t=>n>=t.s&&n<=t.e).map(L);
+  const late=open.filter(t=>n>t.e&&n<=t.e+TOL).map(t=>L(t)+' [เลยกำหนด '+(n-t.e)+' วัน]');
+  const tmr=open.filter(t=>t.s===n+1).map(L);
+  if(!today.length&&!late.length&&!tmr.length) return '';
+  const d=new Date(); const dd=String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+d.getFullYear();
+  let m='📅 Plan PM SA8 ประจำวันที่ '+dd;
+  if(today.length) m+='\n\n🔧 งานวันนี้\n'+today.join('\n');
+  if(late.length) m+='\n\n⚠️ ค้าง (ยังอยู่ในช่วง ±'+TOL+' วัน)\n'+late.join('\n');
+  if(tmr.length) m+='\n\n⏭ พรุ่งนี้\n'+tmr.join('\n');
+  return m;
+}
+function viewLine(n){
+  const m=lineMessage(n);
+  return `<p class="info">ระบบส่งข้อความนี้เข้า LINE ทุกวันเวลา 08:00 ตามสถานะงานในขณะนั้น ตัวอย่างด้านล่างคำนวณจากสถานะที่ติ๊กไว้ในหน้านี้</p>
+    <pre class="msg" id="msg">${(m||'วันนี้ไม่มีงานที่ต้องแจ้งเตือน ระบบจะไม่ส่งข้อความ').replace(/</g,'&lt;')}</pre>
+    <div class="row"><button class="btn pri" id="copy"${m?'':' disabled'}>คัดลอกข้อความ</button></div>
+    <p class="info">การส่งจริงทำโดยสคริปต์ใน Google Sheet (<code>Code.gs</code>) เพราะ Token ของ LINE ต้องไม่อยู่ในหน้าเว็บ การติ๊กงานในหน้านี้จะบันทึกลงช่อง "เสร็จแล้ว" ในชีตเดียวกัน ข้อความ LINE ตอน 08:00 จึงตรงกับสถานะที่เห็นที่นี่</p>`;
+}
+
+function renderSummary(n){
+  const open=TASKS.filter(t=>!done.has(t.id));
+  const nToday=open.filter(t=>n>=t.s&&n<=t.e).length;
+  const nLate=open.filter(t=>n>t.e&&n<=t.e+TOL).length;
+  const nOver=open.filter(t=>n>t.e+TOL).length;
+  const nSoon=open.filter(t=>t.s>n&&t.s-n<=3).length;
+  $('#sum').innerHTML=`
+    <div class="now"><b>${nToday}</b><span>งานวันนี้</span></div>
+    <div class="${nLate+nOver?'alert':''}"><b>${nLate+nOver}</b><span>ค้างอยู่</span></div>
+    <div><b>${nSoon}</b><span>ใน 3 วันข้างหน้า</span></div>
+    <div><b>${done.size}/${TASKS.length}</b><span>เสร็จแล้ว</span></div>`;
+}
+function renderClock(n){
+  const d=new Date();
+  const months=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+  const days=['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัสบดี','ศุกร์','เสาร์'];
+  $('#clockDate').textContent='วัน'+days[d.getDay()]+'ที่ '+d.getDate()+' '+months[d.getMonth()]+' '+d.getFullYear();
+  $('#clockSub').textContent=(n>=1&&n<=31)?'วันที่ '+n+' ของแผนเดือนนี้':'อยู่นอกช่วงแผน ต.ค. 2026';
+}
+
+function render(){
+  const n=todayNum();
+  renderClock(n); renderSummary(n);
+  const fn={today:viewToday,matrix:viewMatrix,all:viewAll,line:viewLine}[tab];
+  const scroll=window.scrollY;
+  $('#view').innerHTML=fn(n);
+  window.scrollTo(0,scroll);
+  document.querySelectorAll('#tabs button').forEach(b=>b.setAttribute('aria-selected',b.dataset.tab===tab));
+}
+
+/* ---------- events ---------- */
+let tt;
+function toast(msg){ const el=$('#toast'); el.textContent=msg; el.hidden=false; clearTimeout(tt); tt=setTimeout(()=>el.hidden=true,2400); }
+document.addEventListener('click',e=>{
+  const tabBtn=e.target.closest('#tabs button'); if(tabBtn){ tab=tabBtn.dataset.tab; render(); return; }
+  const chk=e.target.closest('.chk'); if(chk){ setDone(chk.dataset.id,chk.getAttribute('aria-pressed')!=='true'); return; }
+  const chip=e.target.closest('.chip'); if(chip){ filterF=+chip.dataset.f; render(); return; }
+  if(e.target.closest('#hd')){ hideDone=!hideDone; render(); return; }
+  if(e.target.closest('#bulk')){
+    const b=$('#bulk');
+    if(b.dataset.arm!=='1'){ b.dataset.arm='1'; b.classList.add('dng'); b.textContent='กดอีกครั้งเพื่อยืนยัน'; $('#bulkMsg').textContent='งานที่เลยช่วงแล้วจะถูกทำเครื่องหมายว่าเสร็จ'; return; }
+    const n=todayNum(); setMany(TASKS.filter(t=>!done.has(t.id)&&n>t.e+TOL).map(t=>t.id),true);
+    toast('ทำเครื่องหมายเสร็จแล้ว'); return;
+  }
+  if(e.target.closest('#copy')){
+    const text=$('#msg').textContent;
+    const fallback=()=>{ const r=document.createRange(); r.selectNodeContents($('#msg')); const s=getSelection(); s.removeAllRanges(); s.addRange(r); toast('เลือกข้อความแล้ว กดคัดลอกได้เลย'); };
+    (navigator.clipboard?navigator.clipboard.writeText(text).then(()=>toast('คัดลอกแล้ว')):Promise.reject()).catch(fallback);
+  }
+});
+
+render();
+pull();
+setInterval(()=>{ if(document.visibilityState==='visible'){ render(); pull(); } },30000);
+document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') pull(); });
+</script>
+
+</body></html>
